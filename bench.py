@@ -10,18 +10,14 @@ from ftplib import FTP, error_temp
 from time import time
 import uuid
 # -----------------------------------------------------------------------------
-
 BUFFER_LEN = 65536
 CHUNK = "x" * BUFFER_LEN
-
-# ADDR = "127.0.0.1"
-# USER = "6743_ftp"
-# PWD = "yOxOFtCypq"
 
 NEED_CLEANUP = set()
 
 s_1K = 1024
 s_1M = s_1K * s_1K
+# -----------------------------------------------------------------------------
 
 
 class FTPPool(object):
@@ -57,7 +53,7 @@ class FTPPool(object):
             while True:
                 ftp = self._connect()
                 if ftp:
-                   break
+                    break
 
         return ftp
 
@@ -99,7 +95,7 @@ def stor(ftp, path, size, stat):
                 break
         conn.close()
         ftp.voidresp()
-    except Exception as e:
+    except Exception:
         stat.inrc_err()
         raise
     else:
@@ -108,7 +104,7 @@ def stor(ftp, path, size, stat):
 
 def runworkers(ftp_pool, count, size, stat, basedir):
     for _ in xrange(count):
-        path ="%s/bench_write-%s" % (basedir, uuid.uuid1().hex)
+        path = "%s/bench_write-%s" % (basedir, uuid.uuid1().hex)
         NEED_CLEANUP.add(path)
         ftp_pool.spawn_ftp(stor, path, size, stat)
 
@@ -156,8 +152,10 @@ class Stats(object):
         now = time()
         delta_time, self.last_time = now - self.last_time, now
         delta_stor, self.last_stor = self.stor - self.last_stor, self.stor
-        delta_bytes, self.last_bytes = self.bytes_ - self.last_bytes, self.bytes_
-        delta_errors, self.last_errors = self.errors - self.last_errors, self.errors
+        delta_bytes, self.last_bytes \
+            = self.bytes_ - self.last_bytes, self.bytes_
+        delta_errors, self.last_errors \
+            = self.errors - self.last_errors, self.errors
         
         return {
             "delta_time": delta_time,
@@ -166,7 +164,8 @@ class Stats(object):
             "errors": delta_errors,
         }
 
-def bytes2human(n, format="%(value).1f%(symbol)s"):
+
+def bytes2human(n, frmt="%(value).1f%(symbol)s"):
     """
     >>> bytes2human(10000)
     '9K'
@@ -180,8 +179,8 @@ def bytes2human(n, format="%(value).1f%(symbol)s"):
     for symbol in reversed(symbols[1:]):
         if n >= prefix[symbol]:
             value = float(n) / prefix[symbol]
-            return format % locals()
-    return format % dict(symbol=symbols[0], value=n)
+            return frmt % locals()
+    return frmt % dict(symbol=symbols[0], value=n)
 
 
 def print_stat(snap):
@@ -195,9 +194,9 @@ def print_stat(snap):
     print "busy", snap["busy"], "err", snap["errors"], "r_stor", round(rate_stor, 1), "r_mb", bytes2human(rate_bytes), "delta_t", round(delta_time, 2) 
  
 
-def bench(addr, login, passwod, basedir, count, size):
+def bench(addr, login, passwod, basedir, count, size, pool):
     stat = Stats()
-    ftp_pool = FTPPool(addr, login, passwod, min_=count * 2, stat=stat)
+    ftp_pool = FTPPool(addr, login, passwod, min_=pool, stat=stat)
     try:
         while 1:
             print_stat(stat.snap_stats())
@@ -245,13 +244,18 @@ def main():
         "-b", action="store", dest="basedir", default="/",
         help="ftp basedir for actions (default: /)"
     )
+    parser.add_argument(
+        "--pool", action="store", type=int, dest="pool",
+        help="default size for connnections pool (default: equal count)"
+    )
     args = parser.parse_args()
 
     if args.bench == "stor":
         bench(
             addr=args.addr, login=args.user, passwod=args.password,
             basedir=args.basedir,
-            count=args.count, size=args.size * 1024 * 1024
+            count=args.count, size=args.size * 1024 * 1024,
+            pool=args.pool and args.pool or args.count * 2
         )
     else:
         pass
