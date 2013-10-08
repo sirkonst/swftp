@@ -89,11 +89,18 @@ def stor(ftp, path, size, stat):
         conn = ftp.transfercmd("STOR " + path)
         total_sent = 0
         while 1:
-            sent = conn.send(CHUNK)
-            total_sent += sent
-            stat.incr_bytes(sent)
-            if total_sent >= size:
+            chunk_size = len(CHUNK)
+            while chunk_size:
+                sent = conn.send(CHUNK[:chunk_size])
+                chunk_size -= sent
+                total_sent += sent
+                stat.incr_bytes(sent)
+            if total_sent == size:
                 break
+            elif total_sent > size:
+                raise RuntimeError(
+                    "total_sent > size: %s > %s" % (total_sent, size)
+                )
         conn.close()
         ftp.voidresp()
     except Exception:
