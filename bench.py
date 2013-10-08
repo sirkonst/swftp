@@ -85,6 +85,7 @@ class FTPPool(object):
 
 def stor(ftp, path, size, stat):
     try:
+        ftp.voidcmd("TYPE I")  # binary mode
         conn = ftp.transfercmd("STOR " + path)
         total_sent = 0
         while 1:
