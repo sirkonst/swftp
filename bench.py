@@ -218,6 +218,20 @@ def bench(addr, login, passwod, basedir, count, size, pool):
         clean(addr, login, passwod)
 
 
+def bench_auth(addr, login, passwod, pool):
+    ftp_pool = FTPPool(addr, login, passwod, min_=pool)
+    try:
+        while 1:
+            print "connections %s" % len(ftp_pool.pool)
+            sleep(1)
+    except KeyboardInterrupt:
+        print "break"
+        ftp_pool.break_all()
+        ftp_pool.wait()
+    finally:
+        pass
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="FTP bench mark for swift"
@@ -264,6 +278,11 @@ def main():
             basedir=args.basedir,
             count=args.count, size=args.size * 1024 * 1024,
             pool=args.pool and args.pool or args.count * 2
+        )
+    elif args.bench == "auth":
+        bench_auth(
+            addr=args.addr, login=args.user, passwod=args.password,
+            pool=args.pool
         )
     else:
         pass
