@@ -28,6 +28,8 @@ GLOBAL_METRICS = [
     'auth.fail',
     'transfer.egress_bytes',
     'transfer.ingress_bytes',
+    'debug.ftp_PASV',
+    'debug.ftp_PORT',
 ]
 
 
