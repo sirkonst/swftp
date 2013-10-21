@@ -186,5 +186,9 @@ def fix_leak(sig, frame):
         num_r = len(readers)
         if num_r > 100:
             for reader in readers:
+                with open("/tmp/swftp_leak.info", "a") as f:
+                    f.write("----\n")
+                    f.write("reader: %s\n" % reader)
+                    f.write("dict: %s\n" % str(reader.__dict__))
                 print "- abort %s connections for %s" % (num_r, host)
                 reader.abortConnection()
