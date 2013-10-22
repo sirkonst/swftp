@@ -11,7 +11,7 @@ from twisted.protocols.ftp import (
     FTP, IFTPShell, IReadFile, IWriteFile, FileNotFoundError,
     CmdNotImplementedForArgError, IsNotADirectoryError, IsADirectoryError,
     RESPONSE, TOO_MANY_CONNECTIONS)
-from twisted.internet import defer
+from twisted.internet import defer, interfaces
 from twisted.internet.protocol import Protocol
 from twisted.python import log
 
@@ -92,6 +92,29 @@ class SwftpFTPProtocol(FTP, object):
         d = super(SwftpFTPProtocol, self).ftp_PASV()
         d.addCallback(lambda _: log.msg(metric="debug.ftp_PORT"))
         return d
+
+    def cleanupDTP(self):
+        """
+        Overwrite cleanupDTP() for fix socket leak
+        (see http://twistedmatrix.com/trac/ticket/5367)
+        """
+        log.msg('cleanupDTP', debug=True)
+
+        log.msg(self.dtpPort)
+        dtpPort, self.dtpPort = self.dtpPort, None
+        if interfaces.IListeningPort.providedBy(dtpPort):
+            dtpPort.stopListening()
+        elif interfaces.IConnector.providedBy(dtpPort):
+            dtpPort.disconnect()
+        else:
+            assert False, "dtpPort should be an IListeningPort or IConnector, instead is %r" % (dtpPort,)
+
+        self.dtpFactory.stopFactory()
+        self.dtpFactory = None
+
+        if self.dtpInstance is not None:
+            self.dtpInstance.transport.abortConnection()
+            self.dtpInstance = None
 
 
 class SwiftFTPShell:
