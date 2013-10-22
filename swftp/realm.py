@@ -19,6 +19,8 @@ except:
 class SwftpRealm:
     interface.implements(portal.IRealm)
 
+    allow_no_existing_path = False
+
     def getHomeDirectory(self):
         return '/'
 
@@ -30,6 +32,7 @@ class SwftpRealm:
                 return interface, avatar, avatar.logout
             elif HAS_FTP and interface == IFTPShell:
                 shell = SwiftFTPShell(avatarId)
+                shell.allow_no_existing_path = self.allow_no_existing_path
                 return interface, shell, shell.logout
 
             raise NotImplementedError(

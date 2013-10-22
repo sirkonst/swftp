@@ -34,6 +34,8 @@ CONFIG_DEFAULTS = {
 
     'stats_host': '',
     'stats_port': '38021',
+
+    'allow_no_existing_path': 'no',
 }
 
 
@@ -146,7 +148,10 @@ def makeService(options):
         extra_headers=parse_key_value_config(c.get('ftp', 'extra_headers')),
         verbose=c.getboolean('ftp', 'verbose'))
 
-    ftpportal = Portal(SwftpRealm())
+    realm = SwftpRealm()
+    realm.allow_no_existing_path = c.getboolean(
+        'ftp', 'allow_no_existing_path')
+    ftpportal = Portal(realm)
     ftpportal.registerChecker(authdb)
     ftpfactory = FTPFactory(ftpportal)
     protocol = SwftpFTPProtocol

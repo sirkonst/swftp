@@ -103,6 +103,8 @@ class SwiftFTPShell:
     """ Implements all the methods needed to treat Swift as an FTP Shell """
     implements(IFTPShell)
 
+    allow_no_existing_path = False
+
     def __init__(self, swiftconn):
         self.swiftconn = swiftconn
         self.swiftfilesystem = SwiftFileSystem(self.swiftconn)
@@ -190,13 +192,17 @@ class SwiftFTPShell:
 
         def err(failure):
             failure.trap(NotFound)
-            # Containers need to actually exist before uploading anything
-            # inside of them. Therefore require containers to actually exist.
-            # All other paths don't have to.
-            if len(path) != 1:
-                return defer.succeed(lambda: None)
-            else:
+
+            if not self.allow_no_existing_path:
                 return defer.fail(IsNotADirectoryError(fullpath))
+            else:
+                # Containers need to actually exist before uploading anything
+                # inside of them. Therefore require containers to actually exist.
+                # All other paths don't have to.
+                if len(path) != 1:
+                    return defer.succeed(lambda: None)
+                else:
+                    return defer.fail(IsNotADirectoryError(fullpath))
 
         d.addErrback(err)
         return d
