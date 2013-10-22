@@ -10,13 +10,14 @@ from zope.interface import implements
 from twisted.protocols.ftp import (
     FTP, IFTPShell, IReadFile, IWriteFile, FileNotFoundError,
     CmdNotImplementedForArgError, IsNotADirectoryError, IsADirectoryError,
+    PermissionDeniedError,
     RESPONSE, TOO_MANY_CONNECTIONS)
 from twisted.internet import defer, interfaces
 from twisted.internet.protocol import Protocol
 from twisted.python import log
 
 from swftp.swiftfilesystem import SwiftFileSystem, swift_stat, obj_to_path
-from swftp.swift import NotFound, Conflict
+from swftp.swift import NotFound, Conflict, UnAuthorized
 
 
 def stat_format(keys, props):
@@ -204,7 +205,11 @@ class SwiftFTPShell:
                 else:
                     return defer.fail(IsNotADirectoryError(fullpath))
 
-        d.addErrback(err)
+        def err_forbidden(failure):
+            failure.trap(UnAuthorized)
+            return defer.fail(PermissionDeniedError(fullpath))
+
+        d.addErrback(err).addErrback(err_forbidden)
         return d
 
     def stat(self, path, keys=()):
