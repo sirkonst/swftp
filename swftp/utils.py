@@ -28,8 +28,6 @@ GLOBAL_METRICS = [
     'auth.fail',
     'transfer.egress_bytes',
     'transfer.ingress_bytes',
-    'debug.ftp_PASV',
-    'debug.ftp_PORT',
 ]
 
 
@@ -172,23 +170,3 @@ def log_runtime_info(sig, frame):
 
     for w in info['writers']:
         log.msg("[writer]: %s" % w)
-
-
-def fix_leak(sig, frame):
-    print "-- fix leak"
-
-    peers = defaultdict(list)
-    for reader in reactor.getReaders():
-        if isinstance(reader, twisted.internet.tcp.Server):
-            peers[reader.getPeer().host].append(reader)
-
-    for host, readers in peers.items():
-        num_r = len(readers)
-        if num_r > 100:
-            for reader in readers:
-                with open("/tmp/swftp_leak.info", "a") as f:
-                    f.write("----\n")
-                    f.write("reader: %s\n" % reader)
-                    f.write("dict: %s\n" % str(reader.__dict__))
-                print "- abort %s connections for %s" % (num_r, host)
-                reader.abortConnection()

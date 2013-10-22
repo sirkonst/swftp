@@ -83,16 +83,6 @@ class SwftpFTPProtocol(FTP, object):
         d.addCallback(pass_cb)
         return d
 
-    def ftp_PASV(self):
-        d = super(SwftpFTPProtocol, self).ftp_PASV()
-        d.addCallback(lambda _: log.msg(metric="debug.ftp_PASV"))
-        return d
-
-    def ftp_PORT(self):
-        d = super(SwftpFTPProtocol, self).ftp_PASV()
-        d.addCallback(lambda _: log.msg(metric="debug.ftp_PORT"))
-        return d
-
     def cleanupDTP(self):
         """
         Overwrite cleanupDTP() for fix socket leak

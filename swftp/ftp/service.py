@@ -98,7 +98,6 @@ def makeService(options):
     from swftp.auth import SwiftBasedAuthDB
     from swftp.utils import (
         log_runtime_info, GLOBAL_METRICS, parse_key_value_config)
-    from swftp.utils import fix_leak
 
     print('Starting SwFTP-ftp %s' % VERSION)
 
@@ -158,7 +157,7 @@ def makeService(options):
     ftpfactory.timeOut = c.getint('ftp', 'session_timeout')
 
     signal.signal(signal.SIGUSR1, log_runtime_info)
-    signal.signal(signal.SIGUSR2, fix_leak)
+    signal.signal(signal.SIGUSR2, log_runtime_info)
 
     internet.TCPServer(
         c.getint('ftp', 'port'),
