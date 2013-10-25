@@ -101,7 +101,7 @@ class SwftpFTPProtocol(FTP, object):
 
     def reply(self, key, *args):
         if key == NAME_SYS_TYPE:
-            self.sendLine("205 UNIX Type: I")
+            self.sendLine("215 UNIX Type: I")
         else:
             super(SwftpFTPProtocol, self).reply(key, *args)
 
