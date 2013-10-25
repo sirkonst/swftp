@@ -18,6 +18,7 @@ import time
 
 CONFIG_DEFAULTS = {
     'auth_url': 'http://127.0.0.1:8080/auth/v1.0',
+    'swift_proxy': '',
     'host': '0.0.0.0',
     'port': '5022',
     'priv_key': '/etc/swftp/id_rsa',
@@ -153,6 +154,7 @@ def makeService(options):
         global_max_concurrency=c.getint('sftp', 'num_persistent_connections'),
         max_concurrency=c.getint('sftp', 'num_connections_per_session'),
         timeout=c.getint('sftp', 'connection_timeout'),
+        proxy=c.get('ftp', 'swift_proxy'),
         extra_headers=parse_key_value_config(c.get('sftp', 'extra_headers')),
         verbose=c.getboolean('sftp', 'verbose'))
 

@@ -8,13 +8,14 @@ See COPYING for license information.
 """
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
-from twisted.web.client import Agent, WebClientContextFactory
+from twisted.web.client import Agent, WebClientContextFactory, ProxyAgent
 from twisted.internet.protocol import Protocol
 from twisted.web.http_headers import Headers
 from twisted.web import error
 from twisted.web._newclient import ResponseDone
 from twisted.web.http import PotentialDataLoss
 from twisted.python import log
+from twisted.internet.endpoints import TCP4ClientEndpoint
 
 import json
 from urllib import quote as _quote
@@ -127,22 +128,35 @@ class SwiftConnection:
         :param username: username for swift
         :param api_key: password/api_key for swift
         :param pool: A twisted.web.client.HTTPConnectionPool object
+        :param proxy: a proxy for request to swift (or None), ex.: 127.0.0.1:88
         :param dict extra_headers: extra HTTP headers to send with each request
         :param bool verbose: verbose setting
     """
     user_agent = 'Twisted Swift'
 
-    def __init__(self, auth_url, username, api_key, pool=None,
+    def __init__(self, auth_url, username, api_key, pool=None, proxy=None,
                  extra_headers=None, verbose=False):
         self.auth_url = auth_url
         self.username = username
         self.api_key = api_key
         self.storage_url = None
         self.auth_token = None
-        contextFactory = WebClientContextFactory()
-        contextFactory.noisy = False
         self.pool = pool
-        self.agent = Agent(reactor, contextFactory, pool=self.pool)
+
+        if proxy:
+            if ":" in proxy:
+                addr, port = proxy.rsplit(":", 1)
+                port = int(port)
+            else:
+                addr, port = proxy, 8000
+
+            endpoint = TCP4ClientEndpoint(reactor, addr, port)
+            self.agent = ProxyAgent(endpoint, pool=self.pool)
+        else:
+            contextFactory = WebClientContextFactory()
+            contextFactory.noisy = False
+            self.agent = Agent(reactor, contextFactory, pool=self.pool)
+
         self.extra_headers = extra_headers
         self.verbose = verbose
 

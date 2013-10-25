@@ -22,6 +22,7 @@ class SwiftBasedAuthDB:
             server
         :param int max_concurrency: The max concurrency for each
             ThrottledSwiftConnection object
+        :param proxy: a proxy for request to swift (or None), ex.: 127.0.0.1:88
         :param bool verbose: verbose setting
     """
     implements(checkers.ICredentialsChecker)
@@ -35,12 +36,14 @@ class SwiftBasedAuthDB:
                  max_concurrency=10,
                  timeout=260,
                  extra_headers=None,
+                 proxy=None,
                  verbose=False):
         self.auth_url = auth_url
         self.global_max_concurrency = global_max_concurrency
         self.max_concurrency = max_concurrency
         self.timeout = timeout
         self.extra_headers = extra_headers
+        self.proxy = proxy
         self.verbose = verbose
 
     def _after_auth(self, result, connection):
@@ -67,6 +70,7 @@ class SwiftBasedAuthDB:
             conn = ThrottledSwiftConnection(
                 locks, self.auth_url, creds.username, creds.password,
                 pool=pool,
+                proxy=self.proxy,
                 extra_headers=self.extra_headers,
                 verbose=self.verbose)
             conn.user_agent = USER_AGENT
