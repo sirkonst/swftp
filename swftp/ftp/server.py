@@ -15,6 +15,7 @@ from twisted.protocols.ftp import (
 from twisted.internet import defer, interfaces
 from twisted.internet.protocol import Protocol
 from twisted.python import log
+from twisted.protocols.ftp import NAME_SYS_TYPE
 
 from swftp.swiftfilesystem import SwiftFileSystem, swift_stat, obj_to_path
 from swftp.swift import NotFound, Conflict, UnAuthorized
@@ -91,6 +92,12 @@ class SwftpFTPProtocol(FTP, object):
         path = " ".join(s for s in segm if s.lower() not in keys)
 
         return super(SwftpFTPProtocol, self).ftp_LIST(path)
+
+    def reply(self, key, *args):
+        if key == NAME_SYS_TYPE:
+            self.sendLine("205 UNIX Type: I")
+        else:
+            super(SwftpFTPProtocol, self).reply(key, *args)
 
     def cleanupDTP(self):
         """
