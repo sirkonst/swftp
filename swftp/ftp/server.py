@@ -93,6 +93,12 @@ class SwftpFTPProtocol(FTP, object):
 
         return super(SwftpFTPProtocol, self).ftp_LIST(path)
 
+    def ftp_NLST(self, path=''):
+        """
+        Overwrite for fix http://twistedmatrix.com/trac/ticket/4258
+        """
+        return super(SwftpFTPProtocol, self).ftp_NLST(path)
+
     def reply(self, key, *args):
         if key == NAME_SYS_TYPE:
             self.sendLine("205 UNIX Type: I")
