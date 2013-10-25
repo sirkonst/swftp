@@ -154,7 +154,7 @@ def makeService(options):
         global_max_concurrency=c.getint('sftp', 'num_persistent_connections'),
         max_concurrency=c.getint('sftp', 'num_connections_per_session'),
         timeout=c.getint('sftp', 'connection_timeout'),
-        proxy=c.get('ftp', 'swift_proxy'),
+        proxy=c.get('sftp', 'swift_proxy'),
         extra_headers=parse_key_value_config(c.get('sftp', 'extra_headers')),
         verbose=c.getboolean('sftp', 'verbose'))
 
