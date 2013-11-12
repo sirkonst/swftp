@@ -4,6 +4,7 @@ This file defines what is required for swftp-ftp to work with twistd.
 See COPYING for license information.
 """
 from swftp import VERSION
+from swftp.logging import StdOutObserver
 
 from twisted.application import internet, service
 from twisted.python import usage, log
@@ -19,6 +20,10 @@ CONFIG_DEFAULTS = {
     'swift_proxy': '',
     'host': '0.0.0.0',
     'port': '5021',
+
+    'rewrite_storage_scheme': '',
+    'rewrite_storage_netloc': '',
+
     'num_persistent_connections': '100',
     'num_connections_per_session': '10',
     'connection_timeout': '240',
@@ -48,7 +53,11 @@ def run():
         print '%s: %s' % (sys.argv[0], errortext)
         print '%s: Try --help for usage details.' % (sys.argv[0])
         sys.exit(1)
-    log.startLogging(sys.stdout)
+
+    # Start Logging
+    obs = StdOutObserver()
+    obs.start()
+
     s = makeService(options)
     s.startService()
     reactor.run()
@@ -148,7 +157,10 @@ def makeService(options):
         timeout=c.getint('ftp', 'connection_timeout'),
         proxy=c.get('ftp', 'swift_proxy'),
         extra_headers=parse_key_value_config(c.get('ftp', 'extra_headers')),
-        verbose=c.getboolean('ftp', 'verbose'))
+        verbose=c.getboolean('ftp', 'verbose'),
+        rewrite_scheme=c.get('ftp', 'rewrite_storage_scheme'),
+        rewrite_netloc=c.get('ftp', 'rewrite_storage_netloc'),
+    )
 
     realm = SwftpRealm()
     realm.allow_no_existing_path = c.getboolean(

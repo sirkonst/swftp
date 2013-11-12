@@ -107,36 +107,42 @@ The default location for the config file is /etc/swftp/swftp.conf.
 Here is an example swftp.conf with all defaults:
 ```
 [sftp]
-auth_url = http://127.0.0.1:8080/auth/v1.0
 host = 0.0.0.0
 port = 5022
 priv_key = /etc/swftp/id_rsa
 pub_key = /etc/swftp/id_rsa.pub
+connection_timeout = 240
+
+auth_url = http://127.0.0.1:8080/auth/v1.0
 num_persistent_connections = 20
 num_connections_per_session = 10
-connection_timeout = 240
+rewrite_storage_scheme =
+rewrite_storage_netloc =
 extra_headers = X-Swftp: true, X-Forwarded-Proto: SFTP
 
-log_statsd_host = 
+log_statsd_host =
 log_statsd_port = 8125
 log_statsd_sample_rate = 10
 log_statsd_metric_prefix = sftp
 
-stats_host = 
+stats_host =
 stats_port = 38022
 
 [ftp]
-auth_url = http://127.0.0.1:8080/auth/v1.0
 host = 0.0.0.0
 port = 5021
-num_persistent_connections = 20
-num_connections_per_session = 10
 sessions_per_user = 10
 connection_timeout = 240
 welcome_message = Welcome to SwFTP - An FTP/SFTP interface for Openstack Swift
-extra_headers = 
 
-log_statsd_host = 
+auth_url = http://127.0.0.1:8080/auth/v1.0
+num_persistent_connections = 20
+num_connections_per_session = 10
+rewrite_storage_scheme =
+rewrite_storage_netloc =
+extra_headers = X-Swftp: true, X-Forwarded-Proto: SFTP
+
+log_statsd_host =
 log_statsd_port = 8125
 log_statsd_sample_rate = 10
 log_statsd_metric_prefix = ftp
@@ -147,31 +153,35 @@ stats_port = 38021
 
 **Server Options**
 
- * **host** - Address that the FTP/SFTP server will listen on.
- * **port** - Port that the FTP/SFTP server will listen on.
- * **sessions_per_user** - Number of FTP/SFTP sessions per unique swift username to allow.
- * **priv_key** - (SFTP Only) - File path to the private SSH key that the SFTP server will use.
- * **pub_key** - (SFTP Only) - File path to the public SSH key generated from the private key.
- * **session_timeout** - (FTP Only) - Session timeout in seconds. Idle sessions will be closed after this much time.
- * **welcome_message** - (FTP Only) - Custom FTP welcome message.
+* **host** - Address that the FTP/SFTP server will listen on.
+* **port** - Port that the FTP/SFTP server will listen on.
+* **sessions_per_user** - Number of FTP/SFTP sessions per unique swift username to allow.
+* **priv_key** - (SFTP Only) - File path to the private SSH key that the SFTP server will use.
+* **pub_key** - (SFTP Only) - File path to the public SSH key generated from the private key.
+* **session_timeout** - (FTP Only) - Session timeout in seconds. Idle sessions will be closed after this much time.
+* **welcome_message** - (FTP Only) - Custom FTP welcome message.
 
 **Swift Options**
 
- * **auth_url** - Auth URL to use to authenticate with the backend swift cluster.
- * **num_persistent_connections** - Number of persistent connections to the backend swift cluster for an entire swftp instance.
- * **num_connections_per_session** - Number of persistent connections to the backend swift cluster per FTP/SFTP session.
- * **connection_timeout** - Connection timeout in seconds to the backend swift cluster.
- * **extra_headers** - Extra HTTP headers that are sent to swift cluster.
-  * e.g.: extra_headers = X-Swftp: true, X-Forwarded-Proto: SFTP
+* **auth_url** - Auth URL to use to authenticate with the backend swift cluster.
+* **num_persistent_connections** - Number of persistent connections to the backend swift cluster for an entire swftp instance.
+* **num_connections_per_session** - Number of persistent connections to the backend swift cluster per FTP/SFTP session.
+* **connection_timeout** - Connection timeout in seconds to the backend swift cluster.
+* **extra_headers** - Extra HTTP headers that are sent to swift cluster.
+    * e.g.: extra_headers = X-Swftp: true, X-Forwarded-Proto: SFTP
+* **rewrite_storage_scheme** - Rewrite the URL scheme of each storage URL returned from Swift auth to this value.
+    * e.g.: rewrite_storage_scheme = https
+* **rewrite_storage_netloc** - Rewrite the URL netloc (hostname:port) of each storage URL returned from Swift auth to this value.
+    * e.g.: rewrite_storage_netloc = 127.0.0.1:12345
 
 **Stats Options**
 
- * **stats_host** - Address that the HTTP stats interface will listen on.
- * **stats_port** - Port that the HTTP stats interface will listen on.
- * **log_statsd_host** - statsd hostname.
- * **log_statsd_port** - statsd port.
- * **log_statsd_sample_rate** - How often in seconds to send metrics to the statsd server.
- * **log_statsd_metric_prefix** - Prefix appended to each stat sent to statsd.
+* **stats_host** - Address that the HTTP stats interface will listen on.
+* **stats_port** - Port that the HTTP stats interface will listen on.
+* **log_statsd_host** - statsd hostname.
+* **log_statsd_port** - statsd port.
+* **log_statsd_sample_rate** - How often in seconds to send metrics to the statsd server.
+* **log_statsd_metric_prefix** - Prefix appended to each stat sent to statsd.
 
 
 Caveats
@@ -185,9 +195,9 @@ Project Organization
 --------------------
 * etc/: Sample config files
 * swftp/: Core/shared code
-  * ftp/: FTP server
-  * sftp/: SFTP server
-  * test/: Unit and functional tests
+    * ftp/: FTP server
+    * sftp/: SFTP server
+    * test/: Unit and functional tests
 * twisted/: For the Twisted Plugin System
 
 Packaging/Creating Init Scripts
@@ -198,8 +208,8 @@ Packaged with SwFTP are a set of example init scripts, upstart scripts. They are
     * /etc/init/swftp-ftp.conf
     * /etc/init/swftp-sftp.conf
 * init.d
-    * /etc/init/swftp-ftp
-    * /etc/init/swftp-sftp
+    * /etc/init.d/swftp-ftp
+    * /etc/init.d/swftp-sftp
 * Supervisor
     * /etc/supervisor/conf.d/swftp.conf
 * Example swftp.conf file

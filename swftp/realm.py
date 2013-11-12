@@ -12,11 +12,11 @@ try:
     from twisted.protocols.ftp import IFTPShell
     from swftp.ftp.server import SwiftFTPShell
     HAS_FTP = True
-except:
+except ImportError:
     HAS_FTP = False
 
 
-class SwftpRealm:
+class SwftpRealm(object):
     interface.implements(portal.IRealm)
 
     allow_no_existing_path = False

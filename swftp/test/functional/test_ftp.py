@@ -23,7 +23,7 @@ class FTPFuncTest(unittest.TestCase):
         self.pool = HTTPConnectionPool(reactor, persistent=True)
         self.swift = get_swift_client(conf, pool=self.pool)
         self.tmpdir = tempfile.mkdtemp()
-        self.ftp = get_ftp_client(conf)
+        self.ftp = self.get_ftp_client()
         yield clean_swift(self.swift)
 
     @defer.inlineCallbacks
@@ -33,19 +33,24 @@ class FTPFuncTest(unittest.TestCase):
         yield clean_swift(self.swift)
         yield self.pool.closeCachedConnections()
 
+    def get_ftp_client(self):
+        return get_ftp_client(conf)
 
-def get_ftp_client(config):
+
+def validate_config(config):
     for key in 'ftp_host ftp_port account username password'.split():
         if key not in config:
             raise unittest.SkipTest("%s not set in the test config file" % key)
-    hostname = config['ftp_host']
-    port = int(config['ftp_port'])
-    username = "%s:%s" % (config['account'], config['username'])
-    password = config['password']
 
+
+def get_ftp_client(config):
+    validate_config(config)
+    if config.get('debug'):
+        ftplib.FTP.debugging = 5
     ftp = ftplib.FTP()
-    ftp.connect(hostname, port)
-    ftp.login(username, password)
+    ftp.connect(config['ftp_host'], int(config['ftp_port']))
+    ftp.login("%s:%s" % (config['account'], config['username']),
+              config['password'])
     return ftp
 
 
@@ -54,6 +59,18 @@ class BasicTests(unittest.TestCase):
         ftp = get_ftp_client(conf)
         ftp.getwelcome()
         ftp.quit()
+
+    def test_get_client_close(self):
+        ftp = get_ftp_client(conf)
+        ftp.getwelcome()
+        ftp.close()
+
+    def test_get_client_sock_close(self):
+        for n in range(100):
+            ftp = get_ftp_client(conf)
+            ftp.getwelcome()
+            ftp.sock.close()
+            ftp.file.close()
 
 
 class ClientTests(unittest.TestCase):
@@ -79,8 +96,11 @@ class ClientTests(unittest.TestCase):
 
     # This test assumes sessions_per_user = 10
     def test_get_many_concurrent(self):
-        for i in range(10):
-            self.get_client()
+        validate_config(conf)
+        for i in range(100):
+            conn = ftplib.FTP()
+            conn.connect(conf['ftp_host'], int(conf['ftp_port']))
+            self.active_connections.append(conn)
         time.sleep(10)
 
     # This test assumes sessions_per_user = 10
@@ -322,15 +342,39 @@ class ListingTests(FTPFuncTest):
 
     @defer.inlineCallbacks
     def test_long_listing(self):
+        obj_count = 10010
         yield self.swift.put_container('ftp_tests')
-        for i in range(101):
-            yield self.swift.put_object(
-                'ftp_tests', str(i),
-                headers={'Content-Type': 'application/directory'})
+        deferred_list = []
+        sem = defer.DeferredSemaphore(200)
+        for i in range(obj_count):
+            d = sem.run(self.swift.put_object, 'ftp_tests', str(i))
+            deferred_list.append(d)
+        yield defer.DeferredList(deferred_list, consumeErrors=True)
         time.sleep(2)
+
+        # The original FTP client can timeout while doing the setup
+        self.ftp = self.get_ftp_client()
         listing = []
         self.ftp.dir('ftp_tests', listing.append)
-        self.assertEqual(101, len(listing))
+        self.assertTrue(len(listing) > 10000)
+
+    @defer.inlineCallbacks
+    def test_long_listing_nested(self):
+        obj_count = 10010
+        yield self.swift.put_container('ftp_tests')
+        deferred_list = []
+        sem = defer.DeferredSemaphore(200)
+        for i in range(obj_count):
+            d = sem.run(self.swift.put_object, 'ftp_tests', 'subdir/' + str(i))
+            deferred_list.append(d)
+        yield defer.DeferredList(deferred_list, consumeErrors=True)
+        time.sleep(2)
+
+        # The original FTP client can timeout while doing the setup
+        self.ftp = self.get_ftp_client()
+        listing = []
+        self.ftp.dir('ftp_tests/subdir', listing.append)
+        self.assertTrue(len(listing) > 10000)
 
 
 class MkdirTests(FTPFuncTest):
