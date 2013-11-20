@@ -19,6 +19,7 @@ from twisted.protocols.ftp import (
     NAME_SYS_TYPE, CmdArgSyntaxError, BadCmdSequenceError,
     REQ_FILE_ACTN_PENDING_FURTHER_INFO
 )
+from twisted.protocols.ftp import PortConnectionError
 
 from swftp.logging import msg
 from swftp.swiftfilesystem import SwiftFileSystem, swift_stat, obj_to_path
@@ -127,6 +128,14 @@ class SwftpFTPProtocol(FTP, object):
             self.dtpInstance.rest_offset = value
 
         return (REQ_FILE_ACTN_PENDING_FURTHER_INFO, )
+
+    def ftp_PASV(self):
+        d = super(SwftpFTPProtocol, self).ftp_PASV()
+
+        def dtp_connect_timeout_eb(failure):
+            failure.trap(PortConnectionError)
+
+        return d.addErrback(dtp_connect_timeout_eb)
 
     def cleanupDTP(self):
         """
